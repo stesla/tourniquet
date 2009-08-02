@@ -50,4 +50,14 @@ describe Tourniquet::Injector do
     k.foo.should_not be_nil
     k.foo.class.should == dep
   end
+
+  it 'should allow depenencies to be injected manually for testing' do
+    klass = Class.new do
+      inject :foo => String
+      attr_reader :foo
+    end
+
+    k = klass.new(:foo => 'bar')
+    k.foo.should == 'bar'
+  end
 end

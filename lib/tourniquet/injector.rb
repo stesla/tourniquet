@@ -1,6 +1,15 @@
 class Class
   def inject(deps = {})
     Injector.bind(self, deps)
+
+    class_eval %Q{
+      def initialize(deps = {})
+        #{deps.keys.collect {|k| "@#{k} = deps[:#{k}]"}.join(";")}
+        after_initialize
+      end
+
+      def after_initialize; end
+    }
   end
 
 end
@@ -14,12 +23,11 @@ module Tourniquet
       end
 
       def create(injector)
-        result = @klass.new
+        deps = {}
         @deps.each do |name, binding|
-          result.instance_variable_set("@#{name}", injector[binding])
+          deps[name] = injector[binding]
         end
-        result.after_initialize if result.respond_to? :after_initialize
-        result
+        @klass.new deps
       end
     end
 
