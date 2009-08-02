@@ -2,16 +2,16 @@ require '../lib/injector'
 
 describe Injector do
   before (:each) do
-    @injector = Injector.new
+    Injector.reset_instance
   end
   
   it 'should blow up if there is no binding for a class' do
-    lambda { @injector[String] }.should raise_error(Injector::NotFound)
+    lambda { Injector[String] }.should raise_error(Injector::NotFound)
   end
 
   it 'should find a class that has used the inject keyword' do
     klass = Class.new { inject }
-    @injector[klass].class.should == klass
+    Injector[klass].class.should == klass
   end
 
   it 'should pass in dependencies' do
@@ -23,7 +23,7 @@ describe Injector do
       attr_reader :foo, :bar
     end
 
-    k = @injector[klass]
+    k = Injector[klass]
     k.class.should == klass
     k.foo.should_not be_nil
     k.foo.class.should == dep_foo

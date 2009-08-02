@@ -31,6 +31,10 @@ class Injector
     def instance
       @instance ||= self.new
     end
+
+    def reset_instance
+      @instance = nil
+    end
   end
 
   def [] (of)
