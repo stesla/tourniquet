@@ -1,6 +1,9 @@
-require '../lib/injector'
+$:.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+require 'tourniquet'
 
-describe Injector do
+include Tourniquet
+
+describe Tourniquet::Injector do
   before (:each) do
     Injector.reset_instance
   end
