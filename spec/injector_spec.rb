@@ -35,20 +35,18 @@ describe Tourniquet::Injector do
   end
 
   it 'should call #after_initialize after dependencies are set' do
-    dep = Class.new { inject }
-
     klass = Class.new do
-      inject :dep => dep
+      inject
       attr_reader :foo
 
       def after_initialize
-        @foo = @dep
+        @foo = []
       end
     end
 
     k = Injector[klass]
     k.foo.should_not be_nil
-    k.foo.class.should == dep
+    k.foo.should be_empty
   end
 
   it 'should allow depenencies to be injected manually for testing' do
