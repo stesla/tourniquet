@@ -18,6 +18,7 @@ module Tourniquet
         @deps.each do |name, binding|
           result.instance_variable_set("@#{name}", injector[binding])
         end
+        result.after_initialize if result.respond_to? :after_initialize
         result
       end
     end

@@ -33,4 +33,21 @@ describe Tourniquet::Injector do
     k.bar.should_not be_nil
     k.bar.class.should == dep_bar
   end
+
+  it 'should call #after_initialize after dependencies are set' do
+    dep = Class.new { inject }
+
+    klass = Class.new do
+      inject :dep => dep
+      attr_reader :foo
+
+      def after_initialize
+        @foo = @dep
+      end
+    end
+
+    k = Injector[klass]
+    k.foo.should_not be_nil
+    k.foo.class.should == dep
+  end
 end
