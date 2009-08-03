@@ -79,7 +79,7 @@ module Tourniquet
     end
     
     def get_instance(interface)
-      raise NotFound unless has_binding? interface
+      raise NotFound, "#{interface}" unless has_binding? interface
       bindings[interface].create(self)
     end
   end
