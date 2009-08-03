@@ -58,4 +58,13 @@ describe Tourniquet::Injector do
     k = klass.new(:foo => 'bar')
     k.foo.should == 'bar'
   end
+
+  it 'should figure out simple linear dependencies' do
+    klass1 = Class.new { inject }
+    klass2 = Class.new { inject :one => klass1; attr_reader :one }
+    klass3 = Class.new { inject :two => klass2; attr_reader :two }
+
+    k = Injector[klass3]
+    k.two.one.should be_instance_of(klass1)
+  end
 end
