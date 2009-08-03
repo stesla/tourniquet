@@ -60,7 +60,7 @@ describe Tourniquet::Injector do
 
   it 'should allow depenencies to be injected manually for testing' do
     klass = Class.new do
-      inject :foo => String
+      inject :foo => :foo
       attr_reader :foo
     end
 
@@ -81,5 +81,19 @@ describe Tourniquet::Injector do
 
     k = injector[:klass3]
     k.two.one.should be_instance_of(klass1)
+  end
+
+  it 'should requre dep keys to be symbols' do
+    [42, "foo", Object.new].each do |key|
+      lambda { Class.new { inject key => :foo}}.should raise_error(MustBeSymbol)
+    end
+    lambda { Class.new { inject :foo => :foo}}.should_not raise_error(MustBeSymbol)
+  end
+
+  it 'should require dep values to be symbols' do
+    [42, "foo", Object.new, Object].each do |value|
+      lambda { Class.new { inject :foo => value}}.should raise_error(MustBeSymbol)
+    end
+    lambda { Class.new { inject :foo => :foo}}.should_not raise_error(MustBeSymbol)
   end
 end
