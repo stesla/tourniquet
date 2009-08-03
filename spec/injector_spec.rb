@@ -4,17 +4,16 @@ require 'tourniquet'
 include Tourniquet
 
 describe Tourniquet::Injector do
-  before (:each) do
-    Injector.reset_instance
-  end
-  
   it 'should blow up if there is no binding for a class' do
-    lambda { Injector[String] }.should raise_error(Injector::NotFound)
+    lambda { Injector.new[:foo] }.should raise_error(NotFound)
   end
 
   it 'should find a class that has used the inject keyword' do
     klass = Class.new { inject }
-    Injector[klass].class.should == klass
+    injector = Injector.new do |i|
+      i.bind(:klass).to(klass)
+    end
+    injector[:klass].should be_instance_of(klass)
   end
 
   it 'should pass in dependencies' do
@@ -22,16 +21,22 @@ describe Tourniquet::Injector do
     dep_bar = Class.new { inject }
 
     klass = Class.new do
-      inject :foo => dep_foo, :bar => dep_bar
+      inject :foo => :foo, :bar => :bar
       attr_reader :foo, :bar
     end
 
-    k = Injector[klass]
-    k.class.should == klass
+    injector = Injector.new do |i|
+      i.bind(:foo).to(dep_foo)
+      i.bind(:bar).to(dep_bar)
+      i.bind(:klass).to(klass)
+    end
+
+    k = injector[:klass]
+    k.should be_instance_of(klass)
     k.foo.should_not be_nil
-    k.foo.class.should == dep_foo
+    k.foo.should be_instance_of(dep_foo)
     k.bar.should_not be_nil
-    k.bar.class.should == dep_bar
+    k.bar.should be_instance_of(dep_bar)
   end
 
   it 'should call #after_initialize after dependencies are set' do
@@ -44,7 +49,11 @@ describe Tourniquet::Injector do
       end
     end
 
-    k = Injector[klass]
+    injector = Injector.new do |i|
+      i.bind(:klass).to(klass)
+    end
+
+    k = injector[:klass]
     k.foo.should_not be_nil
     k.foo.should be_empty
   end
@@ -61,10 +70,16 @@ describe Tourniquet::Injector do
 
   it 'should figure out simple linear dependencies' do
     klass1 = Class.new { inject }
-    klass2 = Class.new { inject :one => klass1; attr_reader :one }
-    klass3 = Class.new { inject :two => klass2; attr_reader :two }
+    klass2 = Class.new { inject :one => :klass1; attr_reader :one }
+    klass3 = Class.new { inject :two => :klass2; attr_reader :two }
 
-    k = Injector[klass3]
+    injector = Injector.new do |i|
+      i.bind(:klass1).to(klass1)
+      i.bind(:klass2).to(klass2)
+      i.bind(:klass3).to(klass3)
+    end
+
+    k = injector[:klass3]
     k.two.one.should be_instance_of(klass1)
   end
 end
