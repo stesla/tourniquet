@@ -1,4 +1,5 @@
 module Tourniquet
+  class AlreadyBound < Exception; end
   class CircularDependency < Exception; end
   class MustBeSymbol < Exception; end
   class NotFound < Exception; end
@@ -106,6 +107,7 @@ module Tourniquet
     end
 
     def bind(interface)
+      raise AlreadyBound, "#{interface}" if bindings.has_key? interface
       Verbs::Bind.new do |binding|
         bindings[interface] = binding
       end

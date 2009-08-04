@@ -146,4 +146,14 @@ describe Tourniquet::Injector do
       one.two.one.two.should == one.two
     end
   end
+
+  it 'cannot bind more than one implementation for an interface' do
+    klass1 = Class.new { inject }
+    klass2 = Class.new { inject }
+
+    injector = Injector.new do |i|
+      i.bind(:foo).to(klass1)
+    end
+    lambda { injector.bind(:foo).to(klass2) }.should raise_error(AlreadyBound)
+  end
 end
