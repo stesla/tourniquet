@@ -123,20 +123,27 @@ describe Tourniquet::Injector do
     injector[:klass].should == injector[:klass]
   end
 
-  it 'should allow circular deps if the ancestor is cached' do
-    klass1 = Class.new { inject :two => :klass2; attr_reader :two }
-    klass2 = Class.new { inject :one => :klass1; attr_reader :one }
+  describe 'with caching enabled and circular dependencies' do
+    before (:each) do
+      klass1 = Class.new { inject :two => :klass2; attr_reader :two }
+      klass2 = Class.new { inject :one => :klass1; attr_reader :one }
 
-    injector = Injector.new do |i|
-      i.bind(:klass1).cached.to(klass1)
-      i.bind(:klass2).to(klass2)
+      @injector = Injector.new do |i|
+        i.bind(:klass1).cached.to(klass1)
+        i.bind(:klass2).to(klass2)
+      end
     end
 
-    lambda { k = injector[:klass1] }.should_not raise_error
-    one = injector[:klass1]
-    one.should respond_to(:two)
-    one.two.should respond_to(:one)
-    one.two.one.should respond_to(:two)
-    one.two.one.two.should == one.two
+    it 'should not blow up' do
+      lambda { @injector[:klass1] }.should_not raise_error
+    end
+
+    it 'should have circular references' do
+      one = @injector[:klass1]
+      one.should respond_to(:two)
+      one.two.should respond_to(:one)
+      one.two.one.should respond_to(:two)
+      one.two.one.two.should == one.two
+    end
   end
 end
