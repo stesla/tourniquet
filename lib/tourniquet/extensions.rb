@@ -8,8 +8,8 @@ class Class
     @__tourniquet__deps = deps
 
     class_eval %Q{
-      def self.__tourniquet__
-        Tourniquet::Binding.new(self, @__tourniquet__deps)
+      def self.__tourniquet__(&block)
+        block.call(self, @__tourniquet__deps)
       end
 
       def initialize(deps = {})

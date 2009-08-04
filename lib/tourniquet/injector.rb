@@ -4,11 +4,10 @@ module Tourniquet
   class NotFound < Exception; end
 
   class Binding
-    attr_accessor :cached
-
-    def initialize(klass, deps)
+    def initialize(klass, deps, cached)
       @klass = klass
       @deps = deps
+      @cached = cached
     end
 
     def each_dep(&block)
@@ -61,8 +60,9 @@ module Tourniquet
       end
 
       def to(impl)
-        binding = impl.__tourniquet__
-        binding.cached = !!@cached
+        binding = impl.__tourniquet__ do |klass, deps|
+          Binding.new(klass, deps, !!@cached)
+        end
         @block.call(binding)
       end
     end
