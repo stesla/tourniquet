@@ -99,8 +99,8 @@ describe Tourniquet::Injector do
 
   it 'should blow up on a circular dependency' do
     klass1 = Class.new { inject :x => :klass3 }
-    klass2 = Class.new { inject :x => :klass2 }
-    klass3 = Class.new { inject :x => :klass1 }
+    klass2 = Class.new { inject :x => :klass1 }
+    klass3 = Class.new { inject :x => :klass2 }
 
     injector = Injector.new do |i|
       i.bind(:klass1).to(klass1)

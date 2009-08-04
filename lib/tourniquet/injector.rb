@@ -9,15 +9,11 @@ module Tourniquet
       @deps = deps
     end
 
-    def create(planner, ancestors = [])
-      @deps.values.each do |dep|
-        raise CircularDependency, "#{dep}" if ancestors.include? dep
-      end
+    def each_dep(&block)
+      @deps.each(&block)
+    end
 
-      deps = {}
-      @deps.each do |name, interface|
-        deps[name] = planner.instantiate(interface, ancestors)
-      end
+    def create(deps)
       @klass.new deps
     end
   end
@@ -28,7 +24,18 @@ module Tourniquet
     end
 
     def instantiate (interface, ancestors)
-      @bindings[interface].create(self, ancestors + [interface])
+      binding = @bindings[interface]
+
+      binding.each_dep do |name, dep|
+        raise CircularDependency, "#{dep}" if ancestors.include? dep
+      end
+
+      deps = {}
+      binding.each_dep do |name, dep|
+        deps[name] = instantiate(dep, ancestors + [interface])
+      end
+
+      binding.create(deps)
     end
 
     def create
@@ -68,7 +75,7 @@ module Tourniquet
       @bindings ||= {}
     end
     private :bindings
-    
+
     def get_instance(interface)
       raise NotFound, "#{interface}" unless bindings.has_key? interface
       instantiate(interface)
