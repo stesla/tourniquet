@@ -29,6 +29,17 @@ module Tourniquet
     end
   end
 
+  class InstanceBinding < Binding
+    def initialize(instance)
+      super(nil, [], false)
+      @instance = instance
+    end
+
+    def instance(_deps)
+      @instance
+    end
+  end
+
   class Planner
     class Lazy
       def initialize(binding)
@@ -93,6 +104,10 @@ module Tourniquet
           Binding.new(klass, deps, !!@cached)
         end
         @block.call(binding)
+      end
+
+      def to_instance(instance)
+        @block.call(InstanceBinding.new(instance))
       end
     end
   end

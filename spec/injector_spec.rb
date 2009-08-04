@@ -156,4 +156,12 @@ describe Tourniquet::Injector do
     end
     lambda { injector.bind(:foo).to(klass2) }.should raise_error(AlreadyBound)
   end
+
+  it 'can bind a specific instance' do
+    injector = Injector.new do |i|
+      i.bind(:db_user).to_instance("bob")
+    end
+
+    injector[:db_user].should == "bob"
+  end
 end
