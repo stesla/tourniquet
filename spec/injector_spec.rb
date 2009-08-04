@@ -110,4 +110,31 @@ describe Tourniquet::Injector do
 
     lambda { k = injector[:klass1] }.should raise_error(CircularDependency)
   end
+
+  it 'should give me a new instance every time by default' do
+    klass = Class.new { inject }
+    injector = Injector.new {|i| i.bind(:klass).to(klass) }
+    injector[:klass].should_not == injector[:klass]
+  end
+
+  it 'should give me a cached instance if I tell it to' do
+    klass = Class.new { inject }
+    injector = Injector.new {|i| i.bind(:klass).cached.to(klass) }
+    injector[:klass].should == injector[:klass]
+  end
+
+  it 'should allow circular deps if the ancestor is cached' do
+    pending
+    klass1 = Class.new { inject :a => :klass2; attr_reader :a }
+    klass2 = Class.new { inject :b => :klass1; attr_reader :b }
+
+    injector = Injector.new do |i|
+      i.bind(:klass1).cached.to(klass1)
+      i.bind(:klass2).to(klass2)
+    end
+
+    lambda { k = injector[:klass1] }.should_not raise_error
+    k = injector[:klass1]
+    k.a.b.should == k
+  end
 end

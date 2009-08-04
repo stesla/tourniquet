@@ -4,6 +4,8 @@ module Tourniquet
   class NotFound < Exception; end
 
   class Binding
+    attr_accessor :cached
+
     def initialize(klass, deps)
       @klass = klass
       @deps = deps
@@ -13,8 +15,13 @@ module Tourniquet
       @deps.each(&block)
     end
 
-    def create(deps)
-      @klass.new deps
+    def cached?
+      @cached && @cache
+    end
+
+    def instance(deps)
+      return @cache if cached?
+      @cache = @klass.new deps
     end
   end
 
@@ -23,19 +30,18 @@ module Tourniquet
       @bindings, @interface = bindings, interface
     end
 
-    def instantiate (interface, ancestors)
+    def instantiate(interface, ancestors)
       binding = @bindings[interface]
-
-      binding.each_dep do |name, dep|
-        raise CircularDependency, "#{dep}" if ancestors.include? dep
+      binding.each_dep do |_name, dep|
+        raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
       end
 
       deps = {}
+
       binding.each_dep do |name, dep|
         deps[name] = instantiate(dep, ancestors + [interface])
       end
-
-      binding.create(deps)
+      binding.instance(deps)
     end
 
     def create
@@ -49,8 +55,14 @@ module Tourniquet
         @block = block
       end
 
+      def cached
+        @cached = true
+        self
+      end
+
       def to(impl)
         binding = impl.__tourniquet__
+        binding.cached = !!@cached
         @block.call(binding)
       end
     end
