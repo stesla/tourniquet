@@ -23,6 +23,7 @@ class Class
 end
 
 module Tourniquet
+  class CircularDependency < Exception; end
   class MustBeSymbol < Exception; end
   class NotFound < Exception; end
 
@@ -32,12 +33,30 @@ module Tourniquet
       @deps = deps
     end
 
-    def create(injector)
+    def create(planner, ancestors = [])
+      @deps.values.each do |dep|
+        raise CircularDependency, "#{dep}" if ancestors.include? dep
+      end
+
       deps = {}
       @deps.each do |name, interface|
-        deps[name] = injector[interface]
+        deps[name] = planner.instantiate(interface, ancestors)
       end
       @klass.new deps
+    end
+  end
+
+  class Planner
+    def initialize(bindings, interface)
+      @bindings, @interface = bindings, interface
+    end
+
+    def instantiate (interface, ancestors)
+      @bindings[interface].create(self, ancestors + [interface])
+    end
+
+    def create
+      instantiate(@interface, [])
     end
   end
 
@@ -74,13 +93,14 @@ module Tourniquet
     end
     private :bindings
     
-    def has_binding?(klass)
-      bindings.has_key? klass
-    end
-    
     def get_instance(interface)
-      raise NotFound, "#{interface}" unless has_binding? interface
-      bindings[interface].create(self)
+      raise NotFound, "#{interface}" unless bindings.has_key? interface
+      instantiate(interface)
     end
+
+    def instantiate(interface)
+      Planner.new(bindings.dup, interface).create
+    end
+    private :instantiate
   end
 end

@@ -96,4 +96,18 @@ describe Tourniquet::Injector do
     end
     lambda { Class.new { inject :foo => :foo}}.should_not raise_error(MustBeSymbol)
   end
+
+  it 'should blow up on a circular dependency' do
+    klass1 = Class.new { inject :x => :klass3 }
+    klass2 = Class.new { inject :x => :klass2 }
+    klass3 = Class.new { inject :x => :klass1 }
+
+    injector = Injector.new do |i|
+      i.bind(:klass1).to(klass1)
+      i.bind(:klass2).to(klass2)
+      i.bind(:klass3).to(klass3)
+    end
+
+    lambda { k = injector[:klass1] }.should raise_error(CircularDependency)
+  end
 end
