@@ -4,10 +4,10 @@ module Tourniquet
   class NotFound < Exception; end
 
   class Binding
-    def initialize(klass, deps, cached)
+    def initialize(klass, deps, caching)
       @klass = klass
       @deps = deps
-      @cached = cached
+      @caching = caching
     end
 
     def each_dep(&block)
@@ -15,7 +15,11 @@ module Tourniquet
     end
 
     def cached?
-      @cached && @cache
+      caching? && @cache
+    end
+
+    def caching?
+      @caching
     end
 
     def instance(deps)
@@ -25,6 +29,25 @@ module Tourniquet
   end
 
   class Planner
+    class Lazy
+      def initialize(binding)
+        @binding = binding
+      end
+
+      def instance
+        raise "No cached instance to lazy load" unless @binding.cached?
+        @binding.instance(nil)
+      end
+
+      def method_missing(message, *args)
+        instance.send(message, *args)
+      end
+
+      def respond_to?(message)
+        instance.respond_to? message
+      end
+    end
+
     def initialize(bindings, interface)
       @bindings, @interface = bindings, interface
     end
@@ -32,13 +55,18 @@ module Tourniquet
     def instantiate(interface, ancestors)
       binding = @bindings[interface]
       binding.each_dep do |_name, dep|
+        next if @bindings[dep].caching?
         raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
       end
 
       deps = {}
 
       binding.each_dep do |name, dep|
-        deps[name] = instantiate(dep, ancestors + [interface])
+        if @bindings[dep].caching?
+          deps[name] = Lazy.new(@bindings[dep])
+        else
+          deps[name] = instantiate(dep, ancestors + [interface])
+        end
       end
       binding.instance(deps)
     end
