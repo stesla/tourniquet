@@ -16,16 +16,16 @@ module Tourniquet
       @caching = caching
     end
 
-    def each_dep(&block)
-      @deps.each(&block)
-    end
-
     def cached?
       caching? && @cache
     end
 
     def caching?
       @caching
+    end
+
+    def each_dep(&block)
+      @deps.each(&block)
     end
 
     def instance(deps)
@@ -79,13 +79,6 @@ module Tourniquet
       @bindings[dep].caching?
     end
 
-    def check_dependencies(interface, ancestors, binding)
-      binding.each_dep do |_name, dep|
-        next if caching? dep
-        raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
-      end
-    end
-
     def calculate_dependencies(interface, ancestors, binding)
       result = {}
       binding.each_dep do |name, dep|
@@ -96,6 +89,13 @@ module Tourniquet
         end
       end
       result
+    end
+
+    def check_dependencies(interface, ancestors, binding)
+      binding.each_dep do |_name, dep|
+        next if caching? dep
+        raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
+      end
     end
 
     def instantiate(interface, ancestors)
