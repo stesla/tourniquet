@@ -7,18 +7,23 @@ SUMMARY = 'a declarative dependency injection framework for Ruby'
 
 task :default => 'spec:technical'
 
+def rcov?
+  !!ENV['RCOV']
+end
+
 begin
   require 'spec/rake/spectask'
   namespace :spec do
     desc "Run technical specs (default)"
     Spec::Rake::SpecTask.new(:technical) do |t|
       t.spec_opts << %w(-fs --color)
+      t.rcov = rcov?
+      t.rcov_opts = %w[-t]
     end
   end
 rescue LoadError
   abort "You need to install rspec to run the specs: gem install rspec"
 end
-
 
 begin
   require 'rubygems'
