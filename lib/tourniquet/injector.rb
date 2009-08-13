@@ -69,27 +69,40 @@ module Tourniquet
       @bindings, @interface = bindings, interface
     end
 
-    def instantiate(interface, ancestors)
-      binding = @bindings[interface]
-      binding.each_dep do |_name, dep|
-        next if @bindings[dep].caching?
-        raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
-      end
-
-      deps = {}
-
-      binding.each_dep do |name, dep|
-        if @bindings[dep].caching?
-          deps[name] = Lazy.new(@bindings[dep])
-        else
-          deps[name] = instantiate(dep, ancestors + [interface])
-        end
-      end
-      binding.instance(deps)
-    end
-
     def create
       instantiate(@interface, [])
+    end
+
+    private
+
+    def caching?(dep)
+      @bindings[dep].caching?
+    end
+
+    def check_dependencies(interface, ancestors, binding)
+      binding.each_dep do |_name, dep|
+        next if caching? dep
+        raise CircularDependency, "#{interface} -> #{dep}" if ancestors.include? dep
+      end
+    end
+
+    def calculate_dependencies(interface, ancestors, binding)
+      result = {}
+      binding.each_dep do |name, dep|
+        if caching? dep
+          result[name] = Lazy.new(@bindings[dep])
+        else
+          result[name] = instantiate(dep, ancestors + [interface])
+        end
+      end
+      result
+    end
+
+    def instantiate(interface, ancestors)
+      binding = @bindings[interface]
+      check_dependencies(interface, ancestors, binding)
+      deps = calculate_dependencies(interface, ancestors, binding)
+      binding.instance(deps)
     end
   end
 
@@ -119,6 +132,7 @@ module Tourniquet
 
   class Injector
     def initialize(&block)
+      @bindings = {}
       block.call(self) unless block.nil?
     end
 
@@ -127,24 +141,19 @@ module Tourniquet
     end
 
     def bind(interface)
-      raise AlreadyBound, "#{interface}" if bindings.has_key? interface
+      raise AlreadyBound, "#{interface}" if @bindings.has_key? interface
       Verbs::Bind.new do |binding|
-        bindings[interface] = binding
+        @bindings[interface] = binding
       end
     end
 
-    def bindings
-      @bindings ||= {}
-    end
-    private :bindings
-
     def get_instance(interface)
-      raise NotFound, "#{interface}" unless bindings.has_key? interface
+      raise NotFound, "#{interface}" unless @bindings.has_key? interface
       instantiate(interface)
     end
 
     def instantiate(interface)
-      Planner.new(bindings.dup, interface).create
+      Planner.new(@bindings.dup, interface).create
     end
     private :instantiate
   end

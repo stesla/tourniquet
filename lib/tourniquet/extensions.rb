@@ -5,9 +5,9 @@
 
 class Class
   def inject(deps = {})
-    deps.each do |k,v|
-      raise Tourniquet::MustBeSymbol, "Dependency key: #{k.inspect}" unless k.instance_of? Symbol
-      raise Tourniquet::MustBeSymbol, "Dependency value: #{v.inspect}" unless v.instance_of? Symbol
+    deps.each do |name, interface|
+      raise Tourniquet::MustBeSymbol, "Dependency key: #{name.inspect}" unless name.instance_of? Symbol
+      raise Tourniquet::MustBeSymbol, "Dependency value: #{interface.inspect}" unless interface.instance_of? Symbol
     end
 
     @__tourniquet__deps = deps
@@ -18,7 +18,7 @@ class Class
       end
 
       def initialize(deps = {})
-        #{deps.keys.collect {|k| "@#{k} = deps[:#{k}]"}.join(";")}
+        #{deps.keys.collect {|name| "@#{name} = deps[:#{name}]"}.join(";")}
         after_initialize
       end
 
