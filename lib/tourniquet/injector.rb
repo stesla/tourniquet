@@ -6,7 +6,7 @@
 module Tourniquet
   class Injector
     def initialize(&block)
-      @bindings = {}
+      @bindings = new_bindings
       block.call(self) unless block.nil?
     end
 
@@ -22,7 +22,6 @@ module Tourniquet
     end
 
     def get_instance(interface)
-      raise NotFound, "#{interface}" unless @bindings.has_key? interface
       instantiate(interface)
     end
 
@@ -30,5 +29,16 @@ module Tourniquet
       Planner.new(@bindings.dup, interface).create
     end
     private :instantiate
+
+    def new_bindings
+      Hash.new do |bindings, interface|
+        value = case interface.to_s
+                when /^(.*)_provider$/ then Tourniquet::ProviderBinding.new(self, $1.to_sym)
+                else nil
+                end
+        bindings[interface] = value
+      end
+    end
+    private :new_bindings
   end
 end

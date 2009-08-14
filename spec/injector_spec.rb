@@ -164,4 +164,21 @@ describe Tourniquet::Injector do
 
     injector[:db_user].should == "bob"
   end
+
+  it 'should bind providers' do
+    klass1 = Class.new { inject }
+    klass2 = Class.new do
+      inject :provider => :klass1.provider
+      attr_reader :provider
+    end
+
+    injector = Injector.new do |i|
+      i.bind(:klass1).to(klass1)
+      i.bind(:klass2).to(klass2)
+    end
+
+    k = injector[:klass2]
+    k.provider.should respond_to(:get_instance)
+    k.provider.get_instance.should be_instance_of(klass1)
+  end
 end

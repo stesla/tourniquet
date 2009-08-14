@@ -26,3 +26,9 @@ class Class
     }
   end
 end
+
+class Symbol
+  def provider
+    "#{self}_provider".to_sym
+  end
+end

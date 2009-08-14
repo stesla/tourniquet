@@ -58,7 +58,7 @@ module Tourniquet
     end
 
     def instantiate(interface, ancestors)
-      binding = @bindings[interface]
+      binding = @bindings[interface] or raise NotFound
       check_dependencies(interface, ancestors, binding)
       deps = calculate_dependencies(interface, ancestors, binding)
       binding.instance(deps)
